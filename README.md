@@ -24,3 +24,8 @@ The way it works is as follows:
  Note: in order for this to work you must have at least 1 reel uploaded with a hashtag in the caption of that reel.
  
  
+ Video Scraper
+------------------
+This script uses YouTube API to scrape for the latest videos for channels
+The output returns a list, from the dictionary of channels, containing the title and upload date of the video
+The script allows for both scraping a single channel, or scraping multiple channels
