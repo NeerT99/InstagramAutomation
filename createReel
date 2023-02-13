@@ -1,0 +1,313 @@
+
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.ui import Select
+import undetected_chromedriver as uc
+import time
+import os
+import shutil
+import subprocess
+import whisper
+import credentials
+
+# initialize webdriver
+driver = uc.Chrome()
+
+def getURL():
+    driver.get('https://www.youtube.com/feed/clips')
+    sign_in_button = WebDriverWait(driver, 20).until(EC.element_to_be_clickable(("css selector", "a.WpHeLc.VfPpkd-mRLv6.VfPpkd-RLmnJb")))
+    sign_in_button.click()
+
+    username_field = WebDriverWait(driver, 20).until(EC.element_to_be_clickable(("name", "identifier")))
+    username_field.send_keys(credentials.yt_login)
+
+    next_button = WebDriverWait(driver, 20).until(EC.element_to_be_clickable(("xpath", "//span[@jsname='V67aGc' and text()='Next']/parent::button")))
+    next_button.click()
+
+    time.sleep(1.5)
+    password_input = WebDriverWait(driver, 20).until(EC.element_to_be_clickable(("name", "Passwd")))
+    password_input.send_keys(credentials.yt_pass)
+
+    next_button = WebDriverWait(driver, 20).until(EC.element_to_be_clickable(("xpath", "//span[@jsname='V67aGc' and text()='Next']/parent::button")))
+    next_button.click()
+
+    time.sleep(1.5)
+    # Find the element with the "thumbnail" id and click on it
+    thumbnail_element = WebDriverWait(driver, 20).until(EC.element_to_be_clickable(("css selector", "ytd-grid-video-renderer.style-scope.ytd-grid-renderer")))
+    thumbnail_element.click()
+
+    time.sleep(3)
+    clipURL = driver.current_url
+    return clipURL
+
+def Downloader(clipURL):
+
+    driver.get("https://y2down.cc/en/")
+    # locate the input element by its id
+    input_element = WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.ID, "link")))
+
+    # input the desired URL into the element
+    input_element.send_keys(clipURL)
+
+    select_element = WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.ID, "format")))
+    select = Select(select_element)
+    select.select_by_value("720")
+
+
+    download_button = WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.ID, "load")))
+    download_button.click()
+
+    print('Waiting for Download...')
+    time.sleep(30)
+    download_button_2 = WebDriverWait(driver, 120).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[id*='downloadButton']")))
+    download_button_2.click()
+
+    print('Downloading File...')
+    time.sleep(30)
+
+    print('File saved to downloads folder...')
+
+def moveFile():
+    # set the path to the downloads folder
+    downloads_folder = '/Users/neerthakkar/Downloads/'
+
+    # set the path to the main folder
+    main_folder = '/Users/neerthakkar/Documents/3. UNI:EDUCATION/CODING/Independent Projects/HustlingismyHigh/Instagram'
+
+    # get the list of files in the downloads folder
+    files = os.listdir(downloads_folder)
+
+    # find the most recent .mp4 file
+    most_recent_file = None
+    most_recent_time = 0
+    for file in files:
+        if file.endswith('.mp4'):
+            file_path = os.path.join(downloads_folder, file)
+            file_time = os.path.getmtime(file_path)
+            if file_time > most_recent_time:
+                most_recent_time = file_time
+                most_recent_file = file
+
+    # move the file to the main folder and rename it to "video.mp4"
+    if most_recent_file:
+        src_path = os.path.join(downloads_folder, most_recent_file)
+        dst_path = os.path.join(main_folder, 'video.mp4')
+        shutil.move(src_path, dst_path)
+        print("File moved and renamed successfully!")
+    else:
+        print("No .mp4 file found in the downloads folder.")
+
+def formatClip():
+    def resize_video(input_path, output_path):
+        ffmpeg_command = [
+            "ffmpeg",
+            "-i", input_path,
+            "-vf", "crop=iw*(1-0.3)/2:ih",
+            output_path
+            ]
+        subprocess.run(ffmpeg_command)
+
+    def getSubtitles(filename):
+        model = whisper.load_model('base')
+        assert model.transcribe(filename).get('segments')
+
+        from stable_whisper import load_model
+
+        model = load_model('base')
+        
+        results = model.transcribe(filename)
+        stab_segments = results['segments']
+        first_segment_word_timestamps = stab_segments[0]['whole_word_timestamps']
+
+        from stable_whisper import stabilize_timestamps
+        stab_segments = stabilize_timestamps(results, top_focus=True)
+
+        # sentence/phrase-level
+        from stable_whisper import results_to_sentence_srt
+        results_to_sentence_srt(results, 'audio.srt')
+
+        from stable_whisper import results_to_word_srt
+        results_to_word_srt(results, 'audio2.srt')
+
+    filename = "video"
+    resize_video(filename+".mp4", filename+"_resized.mp4")
+    filename = filename+"_resized.mp4"
+    getSubtitles(filename)
+
+    # Open the input .srt file
+    with open('audio2.srt', 'r') as f:
+        # Read the file lines into a list
+        lines = f.readlines()
+
+    start_timestamps = []
+    end_timestamps = []
+    words = []
+
+    for i in range(0, len(lines), 4):
+        # Split the second line (timestamps) into start and end timestamps
+        start, end = lines[i+1].strip().split(' --> ')
+        # Add the start and end timestamps to the corresponding lists
+        start_timestamps.append(start)
+        end_timestamps.append(end)
+        # Add the words in the third line to the words list
+        words.append(lines[i+2].strip())
+
+    sentences = []
+    current_sentence = []
+    current_start_timestamp = None
+    current_end_timestamp = None
+    for word, start_timestamp, end_timestamp in zip(words, start_timestamps, end_timestamps):
+        if current_start_timestamp is None:
+            current_start_timestamp = start_timestamp
+        if len(' '.join(current_sentence)) + len(word) > 30:
+            sentences.append((current_sentence, current_start_timestamp, current_end_timestamp))
+            current_sentence = []
+            current_start_timestamp = start_timestamp
+        if current_sentence and current_sentence[-1] == word:
+            continue
+        current_sentence.append(word)
+        current_end_timestamp = end_timestamp
+        if word[-1] in ['.', '?', '!', ','] or word in ['and', 'because', 'or', 'also']:
+            sentences.append((current_sentence, current_start_timestamp, current_end_timestamp))
+            current_sentence = []
+            current_start_timestamp = None
+            current_end_timestamp = None
+    if current_sentence:
+        sentences.append((current_sentence, current_start_timestamp, current_end_timestamp))
+
+    for i in range(len(sentences) - 1):
+        tuple1 = sentences[i]
+        tuple2 = sentences[i+1]
+        end_timestamp1 = tuple1[2]
+        start_timestamp2 = tuple2[1]
+        if end_timestamp1 is not None and start_timestamp2 is not None and end_timestamp1 > start_timestamp2:
+            tuple2 = (tuple2[0], end_timestamp1, tuple2[2])
+            sentences[i+1] = tuple2
+
+    with open('audio2Edit.srt', 'w') as f:
+        for i, (sentence, start_timestamp, end_timestamp) in enumerate(sentences):
+            sentence = ' '.join(sentence)
+            f.write(f"{i+1}\n{start_timestamp} --> {end_timestamp}\n{sentence}\n\n")
+
+    with open(filename.replace('_resized.mp4', '_transcript.txt'), 'w') as f:
+        for sentence in sentences:
+            f.write(f"{' '.join(sentence[0])}\n")
+
+    subprocess.run(["ffmpeg", "-i", filename, "-vf", "subtitles=audio2Edit.srt:force_style='Alignment=10,Fontname=Futura,PrimaryColour=0xF5F5F5,Fontsize=10'", "-c:a", "copy", filename.replace("_resized.mp4", "_instaReel.mp4")])
+
+    print(
+        '-------------------------------', 
+        '\n',
+        ' Video Successfully Created!',
+        '\n',
+        '-------------------------------', 
+        '\n',
+        'Filename: '+filename.replace("_resized.mp4", "_instaReel.mp4"),
+        '\n',
+        '-------------------------------'
+        )
+
+
+    if not os.path.exists("instagramReels"):
+        os.mkdir("instagramReels")
+
+    filename = filename.replace("_resized.mp4", "_instaReel.mp4")
+
+    output_path = os.path.join("instagramReels", filename)
+    shutil.move(filename, output_path)
+
+    if filename.endswith("_transcript.txt"):
+        # Construct the source and destination paths
+        source_path = os.path.join('.', filename)
+        destination_path = os.path.join("reelTranscripts", filename)
+        # Move the file to the new directory
+        shutil.move(source_path, destination_path)
+
+    print('Reel and Transcript have been created! Check instagramReels Folder')
+
+def GPT():
+
+    # Sign in to ChatGPT
+    print('Getting Caption and Hashtag for Reel...')
+    print('Loading ChatGPT...')
+    driver.get("https://chat.openai.com/")
+    time.sleep(5)
+    try:
+        login_button = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="__next"]/div[1]/div/div[4]/button[1]')))
+        login_button.click()
+    except Exception as e:
+        print("ChatGPT is busy right now, try again later.", str(e))
+
+    # Captcha
+    try:
+        element = wait.until(EC.element_to_be_clickable((By.XPATH,"//*[@id='cf-stage']/div[6]/label/span")))
+        element.click()
+    except:
+        pass
+
+    email_input = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="username"]')))
+    email_input.send_keys("nthakkar26@hotmail.com")
+    continue_button = wait.until(EC.element_to_be_clickable((By.XPATH, '/html/body/main/section/div/div/div/form/div[2]/button')))
+    continue_button.click()
+    password_input = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="password"]')))
+    password_input.send_keys("Maneer123")
+    continue_button = wait.until(EC.element_to_be_clickable((By.XPATH, '/html/body/main/section/div/div/div/form/div[2]/button')))
+    continue_button.click()
+    print('Logged in to ChatGPT')
+    time.sleep(1)
+
+    # Click through conditions
+    button = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="headlessui-dialog-panel-:r1:"]/div[2]/div[4]/button')))
+    button.click()
+    button = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="headlessui-dialog-panel-:r1:"]/div[2]/div[4]/button[2]')))
+    button.click()
+    button = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="headlessui-dialog-panel-:r1:"]/div[2]/div[4]/button[2]')))
+    button.click()
+
+    # Enter Prompt
+    with open("video_transcript.txt", "r") as file:
+        transcript = file.read()
+
+    textarea = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="__next"]/div[1]/div[1]/main/div[2]/form/div/div[2]/textarea')))
+    textarea.send_keys(
+        "I want you to read the transcript in the next message to give me an instagram caption and some hashtags that relate to it. Keep it very clear and concise. + I want the summary to be in this format + caption || hashtags" 
+        + transcript
+        )
+    time.sleep(3)
+    button = WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="__next"]/div[1]/div[1]/main/div[2]/form/div/div[2]/button')))
+    button.click()
+    time.sleep(1)
+
+    # Get Response
+    wait = WebDriverWait(driver, 60)
+    button = wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='__next']/div[1]/div[1]/main/div[2]/form/div/div[2]/button")))
+    time.sleep(1)
+
+    xpath = f"//*[@id='__next']/div[1]/div/main/div[1]/div/div/div/div[{4}]/div/div[2]/div[1]/div/div"
+    text_box = driver.find_element(By.XPATH, xpath)
+    print('Caption: ', '\n', text_box.text, '\n' )
+    time.sleep(5)
+
+    print('Done.')
+
+    print('Deleting conversation... Please Wait') 
+    # Delete Conversation
+    convo = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="__next"]/div[1]/div[2]/div/div/nav/div/div/a[1]')))
+    convo.click()
+    bin = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="__next"]/div[1]/div[2]/div/div/nav/div/div/a[1]/div[2]/button[2]')))
+    bin.click()
+    confirm = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="__next"]/div[1]/div[2]/div/div/nav/div/div/a[1]/div[2]/button[1]')))
+    confirm.click() 
+
+    print('Logging out of ChatGPT')
+    time.sleep(1)
+
+    driver.quit()
+
+clipURL = getURL()
+Downloader(clipURL)
+moveFile()
+formatClip()
+GPT()
+
