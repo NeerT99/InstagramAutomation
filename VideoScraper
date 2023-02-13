@@ -1,0 +1,246 @@
+# This script uses YouTube API to generate a list of the latest videos from desired content creators
+# I have created 2 example dictionarys for different types of content
+# Note, you must have a YouTube API key in order for this to work!
+
+from datetime import datetime, timedelta
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+import Tools.credentials as credentials
+
+"""
+
+ContentCreatorsDict is to help clips channels find the latest videos from the biggest content creators right now
+The intention is to find clips that will go viral and this helps find clips quickly.
+
+The PodcastsDict aims to find the latest videos from channels that inspire and educate people on their health, wealth and self improvement.
+
+Pick whichever dictionary is best for you
+
+"""
+
+ContentCreatorsDict = {
+    'Sidemen': 'UCDogdKl7t7NHzQ95aEwkdMw',
+    'Kai Cenat Live': 'UCvCfpQXRXdJdL07pzTIA6Cw',
+    'Adin Ross': 'UCey-eDTR5J6xU6pZ2f4guoA',
+    'JJ Olatunji': 'UCGmnsW623G1r-Chmo5RB4Yw',
+    'More Sidemen': 'UCh5mLn90vUaB1PbRRx_AiaA',
+    'ZerkaaShorts': 'UCk5azh7kjYWMkWQsLrqn_9w',
+    'MiniminterClips': 'UCzfVmyl18x2TTaWp0d5rBNQ',
+    'MiniminterShorts': 'UCxCsKYORsL2vnndmV8Pq4xQ',
+    'AMP': 'UCJbYdyufHR-cxOuY96KIoqA',
+    'YourRage': 'UCWyDCS2xtZgab_MUlhmpQZA',
+    'Beta Squad': 'UCxOzbkk0bdVl6-tH1Fcajfg',
+    'Chunkz': 'UCv-GNHtqM97EaU_i7gN_Ikw',
+    'Niko Omilana': 'UCdcUmdOxMrhRjKMw-BX19AA',
+    'Sharky': 'UCQNbfWASCZedLPFChbJ6AEg',
+    'Jake Paul': 'UCcgVECVN4OKV6DH1jLkqmcA',
+    'BS with Jake Paul': 'UCbEn1kwHr0TPmC9VPWIA_Mw', 
+    'Logan Paul': 'UCG8rbF3g2AMX70yOd8vqIZg',
+    'Impaulsive': 'UCGeBogGDZ9W3dsGx-mWQGJA',
+    'IShowSpeed': 'UCWsDFcIhY2DBi3GB5uykGXA',
+    'Live Speedy': 'UC2bW_AY9BlbYLGJSXAbjS4Q',
+    'Whats Good Podcast': 'UCFPElAbES8GHfBZrDrGbSLQ',
+    'Stand Out TV': 'UCjg6h0ryHO1i3KZBzfJYliQ',
+}
+
+PodcastsDict = {
+    # Channel Name: Channel ID
+    'Andrew Huberman': 'UC2D2CMWXMOVWx7giW1n3LIg', 
+    'Angie Martinez': 'UC9yRXKq58_XkpeOcKjwqyjA',
+    'Bare Performance Podcast': 'UCF494AxFwZl2BG3ySp9ehsQ',
+    'Bradley Martyns Raw Talk': 'UCSt7m67E9O8xONdHsNIy39A', 
+    'First Things THRST': 'UCJfKk0TptIPDLKZnDlJe6sQ', 
+    'Full Send Podcast': 'UChPuCAEXg7iYkVNjQY1NGYg', 
+    'Grant Cardone': 'UCdlNK1xcy-Sn8liq7feNxWw',
+    'Iman Gadzhi': 'UCQ4FNww3XoNgqIlkBqEAVCg', 
+    'Impaulsive': 'UCGeBogGDZ9W3dsGx-mWQGJA', 
+    'Jay Shetty': 'UCbV60AGIHKz2xIGvbk0LLvg', 
+    'Jay Shetty Podcast': 'UCbk_QsfaFZG6PdQeCvaYXJQ', 
+    'Joe Rogan': 'UCzQUP1qoWDoEbmsQxvdjxgQ', 
+    'Logan Paul': 'UCG8rbF3g2AMX70yOd8vqIZg', 
+    'PBD Podcast': 'UCGX7nGXpz-CmO_Arg-cgJ7A', 
+    'Piers Morgan Uncensored': 'UCatt7TBjfBkiJWx8khav_Gg', 
+    'Strike It Big': 'UCU_dVl8UkPXD6VugX1GOnuQ',  
+    'TheDiaryOfACEO': 'UCGq-a57w-aPwyi3pW7XLiH',
+    'Tom Bilyeu': 'UCnYMOamNKLGVlJgRUbamveA',  
+    'Valuetainment': 'UCIHdDJ0tjn_3j-FS7s_X1kQ',
+    'ValuetainmentMoney': 'UC7muJQNjKAQh0n6bZdYVGKQ',
+}
+
+API_KEY = credentials.API_KEY
+
+def singleChannelScrape():
+    days = int(input('How many days back do you want to scrape? '))
+
+    channel = input('Are you are Scraping for CC or PC --> ')
+    channelName = input('Please provide the name of the channel you want to scrape --> ')
+    if channel == 'CC':
+        channel_id = ContentCreatorsDict[channelName]
+    elif channel == 'PC':
+        channel_id = PodcastsDict[channelName]
+    else:
+        print('Error, did not select HH or CD correctly!')
+    
+    print('Ok. Scraping videos from selected channels from {days} ago till now. Please wait...')
+
+
+    youtube = build('youtube', 'v3', developerKey=API_KEY)
+    today = datetime.utcnow()
+    days_ago = today - timedelta(days=days)
+
+    # Get the videos published within the last `days` number of days
+    try:
+        # Call the search.list method
+        search_response = youtube.search().list(
+            channelId=channel_id,
+            type='video',
+            part='id,snippet',
+            order='date',
+            publishedAfter=days_ago.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            publishedBefore=today.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            maxResults=50
+        ).execute()
+
+        # Check if the search returned any results
+        if len(search_response['items']) > 0:
+            # Get the length and URL of each video
+            for video in search_response['items']:
+
+                video_id = video['id']['videoId']
+                video_response = youtube.videos().list(
+                    id=video_id,
+                    part='contentDetails'
+                ).execute()
+
+                duration = video_response['items'][0]['contentDetails']['duration']
+                url = f'https://www.youtube.com/watch?v={video_id}'
+
+                duration = duration.replace('P', '').replace('T', '').replace('S', '')
+                if 'H' in duration:
+                    hours, minutes, seconds = duration.split('H')
+                elif 'M' in duration:
+                    minutes, seconds = duration.split('M')
+                    hours = '0'
+                else:
+                    seconds = duration
+                    hours = '0'
+                    minutes = '0'
+
+                hours = int(hours)
+                minutes = int(minutes)
+                seconds = int(seconds)
+
+                # This step is to filter out YouTube Shorts, and thus only include longer form content
+                if hours == 0 and minutes == 0 and seconds < 60:
+                    continue
+
+                hours = str(hours).zfill(2)
+                minutes = str(minutes).zfill(2)
+                seconds = str(seconds).zfill(2)
+                
+                duration = f'{hours}:{minutes}:{seconds}'
+
+                print(f'{video["snippet"]["title"]} || {duration} || {url}')
+
+        else:
+            print('No videos found')
+
+    except HttpError as error:
+        print(f'An error occurred: {error}')
+
+def multiChannelScrape():
+    channelIDs = input(
+        'What Page are you Scraping For?: '
+        '\n'
+        '-------------------------'
+        '\n'
+        'contentCreators'
+        '\n'
+        'or'
+        '\n'
+        'podcastChannels'
+        '\n'
+        '-------------------------'
+        '\n'
+        '--> '
+        )+'Dict'
+
+    channelDict = eval(channelIDs)
+
+    days = int(input('How many days back do you want to scrape from? '))
+    print('Ok. Scraping videos from selected channels from {days} ago till now. Please wait...')
+
+    youtube = build('youtube', 'v3', developerKey=API_KEY)
+    today = datetime.utcnow()
+    days_ago = today - timedelta(days=days)
+
+    # Loop through the channels in the dictionary
+    for channel_name, channel_id in channelDict.items():
+        print(f'\nChannel: {channel_name}\nVideos:')
+        # Get the videos published within the last `days` number of days
+        try:
+            search_response = youtube.search().list(
+                channelId=channel_id,
+                type='video',
+                part='id,snippet',
+                order='date',
+                publishedAfter=days_ago.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                publishedBefore=today.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                maxResults=50
+            ).execute()
+
+            if len(search_response['items']) > 0:
+                # Get the length and URL of each video
+                for video in search_response['items']:
+                    # Get the video ID
+                    video_id = video['id']['videoId']
+
+                    video_response = youtube.videos().list(
+                        id=video_id,
+                        part='contentDetails'
+                    ).execute()
+
+                    duration = video_response['items'][0]['contentDetails']['duration']
+                    url = f'https://www.youtube.com/watch?v={video_id}'
+
+                    duration = duration.replace('P', '').replace('T', '').replace('S', '')
+                    
+                    if 'H' in duration:
+                        hours, minutes, seconds = duration.rsplit('H', 1)[0], duration.rsplit('H', 1)[1], '00'
+                    elif 'M' in duration:
+                        minutes, seconds = duration.rsplit('M', 1)[0], duration.rsplit('M', 1)[1]
+                        hours = '0'
+                    else:
+                        seconds = duration
+                        hours = '0'
+                        minutes = '0'
+
+                    hours = hours.zfill(2)
+                    minutes = minutes.zfill(2)
+                    seconds = seconds.zfill(2)
+
+                    duration = f'{hours}:{minutes}:{seconds}'
+
+                    print(f'{video["snippet"]["title"]} || {duration} || {url}')
+
+            else:
+                print('No videos found')
+
+        except HttpError as error:
+            print(f'An error occurred: {error}')
+
+getVideos = input(
+    '----------------------------------------------------------------------------------------------------'
+    '\n'
+    'Would you like to scrape a single channel or Scrape multiple channels from the dictionaries above? \n'
+    '(Enter either <single> or <multiple>)\n'
+    '----------------------------------------------------------------------------------------------------'
+    '\n' '--> '
+    )
+if getVideos == 'single':
+    singleChannelScrape()
+elif getVideos == 'multiple':
+    multiChannelScrape()
+else:
+    print("Invalid input. Please try again.")
+
