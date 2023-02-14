@@ -1,8 +1,8 @@
 # InstagramAutomation
 The goal of this repository is to create a script that fully automates all aspects of an Instagram Page. These include:
- - Finding the Content
- - Creation of Content
- - Marketing the Page
+ - Finding the Content - VideoScraper
+ - Creation of Content - CreateReels
+ - Marketing the Page - FollowBot
 
 Create Reels
 ------------------
