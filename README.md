@@ -3,6 +3,8 @@ The goal of this repository is to create a script that fully automates all aspec
  - Finding the Content - VideoScraper
  - Creation of Content - CreateReel
  - Marketing the Page - FollowBot
+ 
+Combining to fully automate the page -> VideoScraper + ClipFinder (Not Uploaded) + Create Reel. The Videoscraper script creates a list of videos that have been uploaded.ClipFinder uses a trained AI model to find clips form these videos, which is then passed through the createReel script to create clips with subtitle overlays. These clips can be uploaded with further automation using a simple seleunium script or 3rd party application, however I choose to manually look through the clips.
 
 Create Reels
 ------------------
