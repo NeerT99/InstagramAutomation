@@ -37,9 +37,9 @@ time.sleep(2)
 
 wait = WebDriverWait(driver, 10)
 username_field = wait.until(EC.presence_of_element_located((By.XPATH, "//*[@id='loginForm']/div/div[1]/div/label/input")))
-username_field.send_keys("clipsdaily4u")
+username_field.send_keys(credentials.USERNAME)
 password_field = wait.until(EC.presence_of_element_located((By.XPATH, "//*[@id='loginForm']/div/div[2]/div/label/input")))
-password_field.send_keys("J03Fru1t?2606")
+password_field.send_keys(credentials.PASSWORD
 time.sleep(1)
 login_button = driver.find_element("xpath", "//*[@id='loginForm']/div/div[3]/button/div")
 login_button.click()
