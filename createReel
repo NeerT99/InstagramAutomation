@@ -73,7 +73,7 @@ def moveFile():
     downloads_folder = '/Users/neerthakkar/Downloads/'
 
     # set the path to the main folder
-    main_folder = '/Users/neerthakkar/Documents/3. UNI:EDUCATION/CODING/Independent Projects/HustlingismyHigh/Instagram'
+    main_folder = 'path/to/your/file'
 
     # get the list of files in the downloads folder
     files = os.listdir(downloads_folder)
@@ -247,11 +247,11 @@ def GPT():
         pass
 
     email_input = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="username"]')))
-    email_input.send_keys("nthakkar26@hotmail.com")
+    email_input.send_keys(credentials.GPTname)
     continue_button = wait.until(EC.element_to_be_clickable((By.XPATH, '/html/body/main/section/div/div/div/form/div[2]/button')))
     continue_button.click()
     password_input = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="password"]')))
-    password_input.send_keys("Maneer123")
+    password_input.send_keys(credentials.GPTpass)
     continue_button = wait.until(EC.element_to_be_clickable((By.XPATH, '/html/body/main/section/div/div/div/form/div[2]/button')))
     continue_button.click()
     print('Logged in to ChatGPT')
