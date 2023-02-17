@@ -11,9 +11,10 @@ import subprocess
 import whisper
 import credentials
 
-# initialize webdriver
+
 driver = uc.Chrome()
 
+# Get the URL of the Clip from your YouTube Page
 def getURL():
     driver.get('https://www.youtube.com/feed/clips')
     sign_in_button = WebDriverWait(driver, 20).until(EC.element_to_be_clickable(("css selector", "a.WpHeLc.VfPpkd-mRLv6.VfPpkd-RLmnJb")))
@@ -41,6 +42,7 @@ def getURL():
     clipURL = driver.current_url
     return clipURL
 
+# Download the clip using y2down
 def Downloader(clipURL):
 
     driver.get("https://y2down.cc/en/")
@@ -68,17 +70,18 @@ def Downloader(clipURL):
 
     print('File saved to downloads folder...')
 
+# Move the downloaded file into the same destination as script
 def moveFile():
     # set the path to the downloads folder
-    downloads_folder = '/Users/neerthakkar/Downloads/'
+    downloads_folder = '/path/to/your/downloads'
 
     # set the path to the main folder
-    main_folder = 'path/to/your/file'
+    main_folder = 'path/to/your/folder'
 
-    # get the list of files in the downloads folder
+
     files = os.listdir(downloads_folder)
 
-    # find the most recent .mp4 file
+    # find the most recent .mp4 file and move it to the main folder
     most_recent_file = None
     most_recent_time = 0
     for file in files:
@@ -88,8 +91,7 @@ def moveFile():
             if file_time > most_recent_time:
                 most_recent_time = file_time
                 most_recent_file = file
-
-    # move the file to the main folder and rename it to "video.mp4"
+                
     if most_recent_file:
         src_path = os.path.join(downloads_folder, most_recent_file)
         dst_path = os.path.join(main_folder, 'video.mp4')
@@ -98,6 +100,7 @@ def moveFile():
     else:
         print("No .mp4 file found in the downloads folder.")
 
+# resize file for instagram and overlay subtitles
 def formatClip():
     def resize_video(input_path, output_path):
         ffmpeg_command = [
@@ -135,6 +138,7 @@ def formatClip():
     filename = filename+"_resized.mp4"
     getSubtitles(filename)
 
+    # To improve timestamp accuracy of sentences the folowing is done
     # Open the input .srt file
     with open('audio2.srt', 'r') as f:
         # Read the file lines into a list
@@ -209,6 +213,7 @@ def formatClip():
         )
 
 
+    # Save this new video.mp4 file to a folder called instagramReels
     if not os.path.exists("instagramReels"):
         os.mkdir("instagramReels")
 
@@ -218,14 +223,14 @@ def formatClip():
     shutil.move(filename, output_path)
 
     if filename.endswith("_transcript.txt"):
-        # Construct the source and destination paths
+        
         source_path = os.path.join('.', filename)
         destination_path = os.path.join("reelTranscripts", filename)
-        # Move the file to the new directory
         shutil.move(source_path, destination_path)
 
     print('Reel and Transcript have been created! Check instagramReels Folder')
 
+# Open chatGPT with Selenium ChromeDriver and get a caption for the video using the transcript
 def GPT():
 
     # Sign in to ChatGPT
