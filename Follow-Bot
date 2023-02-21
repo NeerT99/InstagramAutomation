@@ -11,6 +11,7 @@
 import undetected_chromedriver as uc
 import random
 import time
+import pyautogui
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -69,6 +70,7 @@ print('Clicking Your Latest Video')
 time.sleep(5)
 
 # Click Latest Hashtag
+# (Note - '#motivation' is used here, but use a generic hashtag that fits your page the best)
 element3 = driver.find_element("css selector", "a.x1i10hfl.xjbqb8w.x6umtig.x1b1mbwd.xaqea5y.xav7gou.x9f619.x1ypdohk.xt0psk2.xe8uvvx.xdj266r.x11i5rnm.xat24cr.x1mh8g0r.xexx8yu.x4uap5.x18d9i69.xkhd6sd.x16tdsg8.x1hl2dhg.xggy1nq.x1a2a7pz._aa9_._a6hd[href='/explore/tags/motivation/']")
 element3.click()
 print('Clicking Hashtag')
@@ -85,23 +87,39 @@ element5.click()
 print('Checking Likes')
 time.sleep(5)
 
-# Click on the follow button
-x = 1032
-y = 731
 
-for i in range(10):
-    # click at the given position
-    driver.execute_script(f"window.scrollTo({x}, {y});")
-    action = ActionChains(driver)
-    action.move_by_offset(x, y).click().perform()
+# Create a Follow Loop
+# Change the values to fir dimensions of your monitor 
+rand_num = random.randint(10, 60)
 
-    print('Followed!')
+driver.maximize_window()
 
-    # scroll down to find another user
-    driver.execute_script("window.scrollBy(0, 100);")
+pyautogui.click(1000, 450)
+print('1st click')
+time.sleep(2)
 
-    wait_time = random.randint(10, 60)
-    time.sleep(wait_time)
+# Follows 4 people the scroll and repeat for a total of 3 times
+i = 0
+for i in range(3):
+    print('Scrolling')
+    pyautogui.scroll(-15)
+    time.sleep(2)
+
+    pyautogui.click(1080, 500)
+    print('Followed User 1')
+    time.sleep(rand_num)
+
+    pyautogui.click(1080, 620)
+    print('Followed User 2')
+    time.sleep(rand_num)
+
+    pyautogui.click(1080, 680)
+    print('Followed User 3')
+    time.sleep(rand_num)
+
+    pyautogui.click(1080, 740)
+    print('Followed User 4')
+    time.sleep(rand_num)
 
 driver.quit()
 
