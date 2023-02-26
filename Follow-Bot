@@ -70,7 +70,8 @@ print('Clicking Your Latest Video')
 time.sleep(5)
 
 # Click Latest Hashtag
-# (Note - '#motivation' is used here, but use a generic hashtag that fits your page the best)
+# Note - '#motivation' is used here, but use a generic hashtag that fits your page the best
+# Also #motivation (or desired hashtag) has to be in your caption as well otherwise it will not work. 
 element3 = driver.find_element("css selector", "a.x1i10hfl.xjbqb8w.x6umtig.x1b1mbwd.xaqea5y.xav7gou.x9f619.x1ypdohk.xt0psk2.xe8uvvx.xdj266r.x11i5rnm.xat24cr.x1mh8g0r.xexx8yu.x4uap5.x18d9i69.xkhd6sd.x16tdsg8.x1hl2dhg.xggy1nq.x1a2a7pz._aa9_._a6hd[href='/explore/tags/motivation/']")
 element3.click()
 print('Clicking Hashtag')
@@ -89,18 +90,18 @@ time.sleep(5)
 
 
 # Create a Follow Loop
-# Change the values to fir dimensions of your monitor 
+# Adjust the values to fit dimensions of your monitor screen 
 rand_num = random.randint(10, 60)
 
 driver.maximize_window()
 
+# Click on the popup screen where all the users are
 pyautogui.click(1000, 450)
 print('1st click')
 time.sleep(2)
 
-# Follows 4 people the scroll and repeat for a total of 3 times
-i = 0
-for i in range(3):
+# Follow Loop
+for i in range(8):
     print('Scrolling')
     pyautogui.scroll(-15)
     time.sleep(2)
@@ -109,7 +110,7 @@ for i in range(3):
     print('Followed User 1')
     time.sleep(rand_num)
 
-    pyautogui.click(1080, 620)
+    pyautogui.click(1080, 620) 
     print('Followed User 2')
     time.sleep(rand_num)
 
@@ -120,6 +121,8 @@ for i in range(3):
     pyautogui.click(1080, 740)
     print('Followed User 4')
     time.sleep(rand_num)
+
+driver.quit()
 
 driver.quit()
 
